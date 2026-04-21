@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Legacy System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .header {
+            background-color: #0066cc;
+            color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #004499;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .container {
+            background-color: white;
+            border: 1px solid #cccccc;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333333;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        table thead {
+            background-color: #f0f0f0;
+            border: 1px solid #cccccc;
+        }
+        
+        table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            color: #333333;
+            border: 1px solid #cccccc;
+            font-size: 13px;
+        }
+        
+        table td {
+            padding: 10px 12px;
+            border: 1px solid #dddddd;
+            font-size: 13px;
+            color: #555555;
+        }
+        
+        table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        table tbody tr:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .amount {
+            text-align: right;
+            font-weight: bold;
+            color: #006600;
+        }
+        
+        .timestamp {
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .merchant-id {
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .footer {
+            background-color: #f5f5f5;
+            border: 1px solid #cccccc;
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+        }
+        
+        .logout-btn {
+            background-color: #cc0000;
+            color: white;
+            border: 1px solid #990000;
+            padding: 8px 16px;
+            font-size: 13px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .logout-btn:hover {
+            background-color: #990000;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Dashboard</h1>
+        <p>Welcome to the Legacy System Dashboard</p>
+    </div>
+    
+    <div class="container">
+        <div class="section-title">Recent Transactions</div>
+        
+        <table id="transactions-table">
+            <thead>
+                <tr>
+                    <th>Amount</th>
+                    <th>Timestamp</th>
+                    <th>Merchant ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="amount">$1,250.00</td>
+                    <td class="timestamp">2024-01-15 10:30:45</td>
+                    <td class="merchant-id">MERCH-001</td>
+                </tr>
+                <tr>
+                    <td class="amount">$875.50</td>
+                    <td class="timestamp">2024-01-15 09:15:22</td>
+                    <td class="merchant-id">MERCH-002</td>
+                </tr>
+                <tr>
+                    <td class="amount">$2,100.00</td>
+                    <td class="timestamp">2024-01-15 08:45:10</td>
+                    <td class="merchant-id">MERCH-003</td>
+                </tr>
+                <tr>
+                    <td class="amount">$450.75</td>
+                    <td class="timestamp">2024-01-15 07:30:55</td>
+                    <td class="merchant-id">MERCH-004</td>
+                </tr>
+                <tr>
+                    <td class="amount">$3,200.00</td>
+                    <td class="timestamp">2024-01-15 06:20:30</td>
+                    <td class="merchant-id">MERCH-005</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="container">
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+    
+    <div class="footer">
+        <p>© 2024 Legacy Systems Inc. All rights reserved.</p>
+        <p>Last updated: <span id="update-time"></span></p>
+    </div>
+    
+    <script>
+        // Simulate page loading delay
+        window.addEventListener('load', function() {
+            document.getElementById('update-time').textContent = new Date().toLocaleString();
+        });
+        
+        function logout() {
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legacy Login System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .login-container {
+            background-color: #ffffff;
+            border: 1px solid #cccccc;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333333;
+            padding-bottom: 15px;
+        }
+        
+        .login-header h1 {
+            font-size: 24px;
+            color: #333333;
+            margin-bottom: 5px;
+        }
+        
+        .login-header p {
+            font-size: 12px;
+            color: #666666;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #333333;
+            font-weight: bold;
+        }
+        
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #999999;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+        }
+        
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border: 1px solid #0066cc;
+            background-color: #f9f9f9;
+        }
+        
+        #login-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #0066cc;
+            color: white;
+            border: 1px solid #004499;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        #login-btn:hover {
+            background-color: #0052a3;
+        }
+        
+        #login-btn:active {
+            background-color: #003d7a;
+        }
+        
+        #error-message {
+            display: none;
+            background-color: #ffcccc;
+            border: 1px solid #ff0000;
+            color: #cc0000;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            text-align: center;
+        }
+        
+        #error-message.show {
+            display: block;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 11px;
+            color: #999999;
+            border-top: 1px solid #cccccc;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>Legacy System</h1>
+            <p>Secure Login Portal</p>
+        </div>
+        
+        <div id="error-message"></div>
+        
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <button type="submit" id="login-btn">Login</button>
+        </form>
+        
+        <div class="footer">
+            <p>© 2024 Legacy Systems Inc. All rights reserved.</p>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error-message');
+            
+            // Simulate network delay
+            document.getElementById('login-btn').disabled = true;
+            document.getElementById('login-btn').textContent = 'Logging in...';
+            
+            setTimeout(function() {
+                // Check credentials
+                if (username === 'testuser' && password === 'testpass') {
+                    // Successful login - redirect to dashboard
+                    window.location.href = 'dashboard.html';
+                } else {
+                    // Failed login - show error
+                    errorDiv.textContent = 'Invalid username or password. Please try again.';
+                    errorDiv.classList.add('show');
+                    document.getElementById('login-btn').disabled = false;
+                    document.getElementById('login-btn').textContent = 'Login';
+                    document.getElementById('password').value = '';
+                    document.getElementById('password').focus();
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>
