@@ -272,13 +272,56 @@ pkill -f chromium
 
 ## Integration with Nova Act and AWS Bedrock
 
+AVEO-Playwright is designed to integrate seamlessly with Amazon Nova Act (AI vision) and AWS Bedrock for intelligent web automation workflows.
+
 ### Nova Act Integration
 
+Nova Act provides AI vision capabilities that can analyze screenshots and make intelligent decisions about web automation tasks. AVEO-Playwright serves as the execution engine.
+
+**Pattern 1: Nova Act as Decision Maker**
 ```python
-# Nova Act can call individual functions
-page = await navigate_to_page(page, url)
-screenshot_path = await capture_screenshot(page)
-transactions = await extract_transaction_data(page)
+from nova_act import NovaAct
+from vendor_automator.vendor_automator import BrowserContext, capture_screenshot
+
+async with BrowserContext(headless=False) as (browser, page):
+    # Capture screenshot for Nova Act analysis
+    screenshot_path = await capture_screenshot(page)
+    
+    # Nova Act analyzes and decides next action
+    with NovaAct(starting_page=f"file://{screenshot_path}") as nova:
+        decision = nova.act_get(
+            "What type of page is this? What should be the next action?",
+            schema={"type": "object", "properties": {"page_type": {"type": "string"}}}
+        )
+        
+        # Execute AVEO-Playwright functions based on Nova Act decision
+        if decision.parsed_response["page_type"] == "login":
+            await login_to_website(page, username, password)
+```
+
+**Pattern 2: AVEO-Playwright as Nova Act Tool**
+```python
+# AVEO-Playwright functions exposed as tools for Nova Act
+class AVEOPlaywrightTool:
+    @staticmethod
+    async def execute_automation(task_description: str) -> dict:
+        result = await run_all(headless=True)
+        return {
+            "screenshot": result["screenshot_path"],
+            "transactions": result["transactions"]
+        }
+```
+
+**Pattern 3: Hybrid Verification**
+```python
+# AVEO-Playwright executes, Nova Act verifies
+await login_to_website(page, username, password)
+screenshot = await capture_screenshot(page)
+
+with NovaAct(starting_page=f"file://{screenshot}") as nova:
+    verification = nova.act_get("Did the login succeed?")
+    if verification.parsed_response:
+        transactions = await extract_transaction_data(page)
 ```
 
 ### AWS Bedrock Integration
@@ -286,11 +329,30 @@ transactions = await extract_transaction_data(page)
 ```python
 import json
 
-# Bedrock can process JSON-serializable data
-transactions = await extract_transaction_data(page)
-transactions_json = json.dumps(transactions)
-bedrock_response = await bedrock_client.invoke(transactions_json)
+result = await run_all(headless=True)
+bedrock_input = json.dumps({
+    "screenshot": result['screenshot_path'],
+    "transactions": result['transactions']
+})
+# Send to Bedrock API for further AI processing
 ```
+
+### Quick Start with Integration
+
+```bash
+# Install Nova Act
+pip install nova-act
+
+# Set Nova Act API key
+export NOVA_ACT_API_KEY="your_api_key"
+
+# Run integration example
+python nova_act_integration_example.py
+```
+
+For detailed integration patterns and examples, see:
+- `NOVA_ACT_INTEGRATION_GUIDE.md` - Comprehensive integration guide
+- `nova_act_integration_example.py` - Working integration examples
 
 ## Development
 

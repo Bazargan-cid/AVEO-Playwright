@@ -58,3 +58,7 @@ output/data/*.json
 
 # Logs
 *.log
+
+# Nova Act repositories (cloned locally, not part of project)
+nova-act/
+nova-act-samples/
