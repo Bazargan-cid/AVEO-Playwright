@@ -165,8 +165,8 @@ async def load_config() -> Dict[str, Any]:
     Raises:
         ConfigurationError: If required variables are missing
     """
-    # Load .env file
-    load_dotenv()
+    # Load .env file with override=True to override system environment variables
+    load_dotenv(override=True)
 
     # Get required variables
     username = os.getenv("USERNAME")
