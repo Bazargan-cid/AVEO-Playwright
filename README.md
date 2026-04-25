@@ -11,6 +11,8 @@ AI-powered robot for automating legacy website interactions using Playwright. Se
 - **Production-Grade Code**: Full type hints, docstrings, and PEP 8 compliance
 - **Local Testing**: Dummy website with login and dashboard for development
 - **Integration Ready**: JSON-serializable outputs for Nova Act and AWS Bedrock
+- **S3 Storage**: Automatic upload of screenshots and data to S3 bucket
+- **CloudWatch Monitoring**: Comprehensive metrics and logging
 
 ## Installation
 
@@ -45,7 +47,26 @@ AI-powered robot for automating legacy website interactions using Playwright. Se
    BASE_URL=file:///path/to/dummy_site/login.html
    HEADLESS=true
    TIMEOUT=30
+   S3_BUCKET_NAME=aveo-playwright-output
+   S3_UPLOAD_ENABLED=true
    ```
+
+## Quick Start
+
+```python
+from vendor_automator.vendor_automator import run_all
+
+# Run complete automation workflow with S3 upload
+result = await run_all(headless=True, upload_to_s3=True)
+
+print(f"Screenshot: {result['screenshot_path']}")
+print(f"Transactions: {len(result['transactions'])}")
+
+# Check S3 upload status
+if 's3_summary' in result:
+    s3_summary = result['s3_summary']
+    print(f"S3 uploads: {s3_summary['successful_uploads']}/{s3_summary['total_uploads']}")
+```
 
 ## Usage
 

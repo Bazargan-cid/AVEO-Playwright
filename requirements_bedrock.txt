@@ -1,0 +1,8 @@
+# Additional requirements for AWS Bedrock integration
+boto3>=1.34.0
+botocore>=1.34.0
+
+# Core requirements (already in requirements.txt)
+# playwright>=1.40.0
+# python-dotenv>=1.0.0
+# asyncio-mqtt>=0.13.0

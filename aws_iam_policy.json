@@ -23,6 +23,28 @@
         "arn:aws:logs:*:*:log-group:/aws/aveo-playwright/*",
         "arn:aws:logs:*:*:log-group:/aws/aveo-playwright/*:*"
       ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:PutObjectAcl",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::aveo-playwright-output",
+        "arn:aws:s3:::aveo-playwright-output/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:HeadBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": "arn:aws:s3:::aveo-playwright-output"
     }
   ]
 }

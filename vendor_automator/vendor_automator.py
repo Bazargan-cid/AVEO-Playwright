@@ -27,6 +27,14 @@ from playwright.async_api import (
     TimeoutError as PlaywrightTimeoutError,
 )
 
+# S3 Storage integration
+try:
+    from s3_storage import s3_storage
+    S3_AVAILABLE = True
+except ImportError:
+    S3_AVAILABLE = False
+    s3_storage = None
+
 
 # ============================================================================
 # Exception Hierarchy
@@ -493,17 +501,18 @@ async def navigate_to_page(
 
 @retry(max_attempts=3, base_delay=1, backoff_factor=2)
 async def capture_screenshot(
-    page: Page, output_dir: str = "output/screenshots"
-) -> str:
+    page: Page, output_dir: str = "output/screenshots", upload_to_s3: bool = True
+) -> Dict[str, Any]:
     """
-    Capture full-page screenshot and save to file.
+    Capture full-page screenshot and save to file, optionally upload to S3.
 
     Args:
         page: Playwright page object
         output_dir: Directory to save screenshot (default: "output/screenshots")
+        upload_to_s3: Whether to upload to S3 (default: True)
 
     Returns:
-        Full file path of saved screenshot
+        Dictionary with local path and S3 info (if uploaded)
 
     Raises:
         ScreenshotError: If capture or save fails
@@ -522,7 +531,27 @@ async def capture_screenshot(
         await page.screenshot(path=str(file_path), full_page=True)
         logger.info(f"Screenshot captured: {file_path}")
 
-        return str(file_path)
+        result = {
+            "local_path": str(file_path),
+            "filename": filename,
+            "timestamp": timestamp
+        }
+
+        # Upload to S3 if enabled and available
+        if upload_to_s3 and S3_AVAILABLE and s3_storage.s3_available:
+            try:
+                s3_result = await s3_storage.upload_screenshot(str(file_path))
+                result["s3_upload"] = s3_result
+                
+                if s3_result["status"] == "success":
+                    logger.info(f"📤 Screenshot uploaded to S3: {s3_result['s3_url']}")
+                else:
+                    logger.warning(f"⚠️ S3 upload failed: {s3_result.get('error', 'Unknown error')}")
+            except Exception as e:
+                logger.warning(f"⚠️ S3 upload error: {e}")
+                result["s3_upload"] = {"status": "error", "error": str(e)}
+
+        return result
 
     except Exception as e:
         raise ScreenshotError(
@@ -533,17 +562,18 @@ async def capture_screenshot(
 
 @retry(max_attempts=3, base_delay=1, backoff_factor=2)
 async def extract_transaction_data(
-    page: Page, output_dir: str = "output/data"
-) -> List[Dict[str, Any]]:
+    page: Page, output_dir: str = "output/data", upload_to_s3: bool = True
+) -> Dict[str, Any]:
     """
-    Extract transaction data from table and save as JSON.
+    Extract transaction data from table and save as JSON, optionally upload to S3.
 
     Args:
         page: Playwright page object
         output_dir: Directory to save extracted data (default: "output/data")
+        upload_to_s3: Whether to upload to S3 (default: True)
 
     Returns:
-        List of dictionaries with keys: amount, timestamp, merchant_id
+        Dictionary with transactions list and file info
 
     Raises:
         DataExtractionError: If extraction fails
@@ -599,7 +629,29 @@ async def extract_transaction_data(
 
         logger.info(f"Transaction data saved to {file_path}")
 
-        return transactions
+        result = {
+            "transactions": transactions,
+            "local_path": str(file_path),
+            "filename": filename,
+            "count": len(transactions),
+            "timestamp": timestamp
+        }
+
+        # Upload to S3 if enabled and available
+        if upload_to_s3 and S3_AVAILABLE and s3_storage.s3_available:
+            try:
+                s3_result = await s3_storage.upload_json_data(str(file_path))
+                result["s3_upload"] = s3_result
+                
+                if s3_result["status"] == "success":
+                    logger.info(f"📤 Transaction data uploaded to S3: {s3_result['s3_url']}")
+                else:
+                    logger.warning(f"⚠️ S3 upload failed: {s3_result.get('error', 'Unknown error')}")
+            except Exception as e:
+                logger.warning(f"⚠️ S3 upload error: {e}")
+                result["s3_upload"] = {"status": "error", "error": str(e)}
+
+        return result
 
     except Exception as e:
         raise DataExtractionError(
@@ -613,15 +665,16 @@ async def extract_transaction_data(
 # ============================================================================
 
 
-async def run_all(headless: bool = False) -> Dict[str, Any]:
+async def run_all(headless: bool = False, upload_to_s3: bool = True) -> Dict[str, Any]:
     """
     Run complete automation workflow: login → navigate → screenshot → extract.
 
     Args:
         headless: Run browser in headless mode (default: False)
+        upload_to_s3: Whether to upload results to S3 (default: True)
 
     Returns:
-        Dictionary with keys: screenshot_path, transactions
+        Dictionary with keys: screenshot_info, transaction_info, s3_summary
 
     Raises:
         AutomationError: If any step fails
@@ -651,15 +704,38 @@ async def run_all(headless: bool = False) -> Dict[str, Any]:
             )
 
             # Capture screenshot
-            screenshot_path = await capture_screenshot(page)
+            screenshot_info = await capture_screenshot(page, upload_to_s3=upload_to_s3)
 
             # Extract transaction data
-            transactions = await extract_transaction_data(page)
+            transaction_info = await extract_transaction_data(page, upload_to_s3=upload_to_s3)
 
             result = {
-                "screenshot_path": screenshot_path,
-                "transactions": transactions,
+                "screenshot_info": screenshot_info,
+                "transaction_info": transaction_info,
+                # Backward compatibility
+                "screenshot_path": screenshot_info["local_path"],
+                "transactions": transaction_info["transactions"],
             }
+
+            # Add S3 summary if uploads were attempted
+            if upload_to_s3:
+                s3_uploads = []
+                
+                if "s3_upload" in screenshot_info:
+                    s3_uploads.append(("screenshot", screenshot_info["s3_upload"]))
+                
+                if "s3_upload" in transaction_info:
+                    s3_uploads.append(("transaction_data", transaction_info["s3_upload"]))
+                
+                successful_uploads = [name for name, upload in s3_uploads if upload["status"] == "success"]
+                
+                result["s3_summary"] = {
+                    "total_uploads": len(s3_uploads),
+                    "successful_uploads": len(successful_uploads),
+                    "success_rate": len(successful_uploads) / len(s3_uploads) if s3_uploads else 0,
+                    "s3_available": S3_AVAILABLE and s3_storage.s3_available if S3_AVAILABLE else False,
+                    "uploads": dict(s3_uploads)
+                }
 
             logger.info("Automation workflow completed successfully")
             return result
