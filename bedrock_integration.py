@@ -9,32 +9,41 @@ import asyncio
 import json
 import boto3
 import base64
+import os
 from typing import Dict, Any, List
 from pathlib import Path
 from botocore.exceptions import ClientError
+from dotenv import load_dotenv
 
 # AVEO-Playwright imports
 from vendor_automator.vendor_automator import run_all
+
+# Load environment variables
+load_dotenv(override=True)
 
 
 class BedrockIntegrator:
     """AWS Bedrock integration for AVEO-Playwright results analysis."""
     
-    def __init__(self, region_name: str = 'us-east-1'):
+    def __init__(self, region_name: str = None):
         """
         Initialize Bedrock integrator.
         
         Args:
-            region_name: AWS region for Bedrock
+            region_name: AWS region for Bedrock (defaults to env var)
         """
-        self.region_name = region_name
-        self.bedrock_runtime = boto3.client('bedrock-runtime', region_name=region_name)
+        self.region_name = region_name or os.getenv('BEDROCK_REGION', 'us-east-1')
+        self.bedrock_runtime = boto3.client('bedrock-runtime', region_name=self.region_name)
+        
+        # Get model ID from environment or use default
+        self.default_model_id = os.getenv('BEDROCK_MODEL_ID', 'amazon.nova-pro-v1:0')
         
         # Bedrock model configurations
         self.models = {
+            'nova-pro': self.default_model_id,
             'claude': 'anthropic.claude-3-sonnet-20240229-v1:0',
             'titan': 'amazon.titan-text-express-v1',
-            'nova': 'amazon.nova-micro-v1:0'  # Nova Act model
+            'nova-micro': 'amazon.nova-micro-v1:0'
         }
     
     def encode_image_to_base64(self, image_path: str) -> str:
@@ -126,53 +135,63 @@ class BedrockIntegrator:
                 'error': f"Analysis failed: {e}"
             }
     
-    async def analyze_with_nova(self, screenshot_path: str, transactions: List[Dict]) -> Dict[str, Any]:
+    async def analyze_with_nova_pro(self, screenshot_path: str, transactions: List[Dict]) -> Dict[str, Any]:
         """
-        Analyze automation results using Amazon Nova via Bedrock.
+        Analyze automation results using Amazon Nova Pro via Bedrock.
         
         Args:
             screenshot_path: Path to screenshot file
             transactions: List of transaction data
             
         Returns:
-            Analysis results from Nova
+            Analysis results from Nova Pro
         """
         try:
             # Encode screenshot
             image_base64 = self.encode_image_to_base64(screenshot_path)
             
-            # Prepare request body for Nova
+            # Prepare request body for Nova Pro
             request_body = {
-                "inputText": f"""
-                Analyze this web automation screenshot and transaction data:
-                
-                Transaction Data:
-                {json.dumps(transactions, indent=2)}
-                
-                Please provide:
-                1. Visual analysis of the screenshot
-                2. Data quality assessment
-                3. Anomaly detection results
-                4. Recommendations for improvement
-                """,
-                "textGenerationConfig": {
-                    "maxTokenCount": 2000,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "text": f"""
+                                Analyze this web automation screenshot and transaction data:
+                                
+                                Transaction Data:
+                                {json.dumps(transactions, indent=2)}
+                                
+                                Please provide:
+                                1. Visual analysis of the screenshot - what do you see?
+                                2. Data quality assessment of the transactions
+                                3. Anomaly detection results - any unusual patterns?
+                                4. Recommendations for automation improvement
+                                5. Overall assessment of the automation success
+                                """
+                            },
+                            {
+                                "image": {
+                                    "format": "png",
+                                    "source": {
+                                        "bytes": image_base64
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "inferenceConfig": {
+                    "maxTokens": 4000,
                     "temperature": 0.1,
                     "topP": 0.9
-                },
-                "inferenceConfig": {
-                    "max_new_tokens": 2000,
-                    "temperature": 0.1
                 }
             }
             
-            # Add image if Nova supports it
-            if image_base64:
-                request_body["inputImage"] = image_base64
-            
-            # Call Bedrock with Nova
+            # Call Bedrock with Nova Pro
             response = self.bedrock_runtime.invoke_model(
-                modelId=self.models['nova'],
+                modelId=self.models['nova-pro'],
                 body=json.dumps(request_body)
             )
             
@@ -181,21 +200,22 @@ class BedrockIntegrator:
             
             return {
                 'status': 'success',
-                'model': 'amazon-nova',
-                'analysis': response_body.get('results', [{}])[0].get('outputText', ''),
+                'model': 'amazon-nova-pro',
+                'analysis': response_body['output']['message']['content'][0]['text'],
+                'usage': response_body.get('usage', {}),
                 'timestamp': asyncio.get_event_loop().time()
             }
             
         except ClientError as e:
             return {
                 'status': 'error',
-                'error': f"Nova Bedrock API error: {e}",
+                'error': f"Nova Pro Bedrock API error: {e}",
                 'error_code': e.response['Error']['Code']
             }
         except Exception as e:
             return {
                 'status': 'error',
-                'error': f"Nova analysis failed: {e}"
+                'error': f"Nova Pro analysis failed: {e}"
             }
     
     async def comprehensive_analysis(self, screenshot_path: str, transactions: List[Dict]) -> Dict[str, Any]:
@@ -221,10 +241,10 @@ class BedrockIntegrator:
         claude_result = await self.analyze_with_claude(screenshot_path, transactions)
         results['analyses']['claude'] = claude_result
         
-        # Run Nova analysis
-        print("🤖 Running Nova analysis...")
-        nova_result = await self.analyze_with_nova(screenshot_path, transactions)
-        results['analyses']['nova'] = nova_result
+        # Run Nova Pro analysis
+        print("🤖 Running Nova Pro analysis...")
+        nova_result = await self.analyze_with_nova_pro(screenshot_path, transactions)
+        results['analyses']['nova_pro'] = nova_result
         
         # Combine insights
         successful_analyses = [
